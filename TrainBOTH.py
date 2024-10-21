@@ -298,15 +298,14 @@ data_transform_test = transforms.Compose([
 # data_transform = None
 dataset_train = FacemorphicDataset('/home/lcultrera/FACEMORPHIC', split='train', mode=params['mode'], task=params['au'], toy=True, max_seq_len=params['max_seq_len'], transform=data_transform, use_annot=True, use_cache=True)
 dataset_test = FacemorphicDataset('/home/lcultrera/FACEMORPHIC', split='test', mode=params['mode'], task=params['au'], toy=True, max_seq_len=params['max_seq_len'], transform=data_transform_test, use_annot=True, use_cache=True)
+
 loss_fn = torch.nn.CrossEntropyLoss()
-#define mse loss
+# define mse loss
 loss_fn_mse = torch.nn.MSELoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=params['learning_rate'], weight_decay=params['weight_decay'])
 scheduler = None # ReduceLROnPlateau(optimizer, 'min')
-#optimizer = torch.optim.SGD(model.parameters(), lr=params['learning_rate']))
-#optimizer = bnb.optim.Adam8bit(model.parameters(), lr=params['learning_rate']) # instead of torch.optim.Adam
-
-
+# optimizer = torch.optim.SGD(model.parameters(), lr=params['learning_rate'])
+# optimizer = bnb.optim.Adam8bit(model.parameters(), lr=params['learning_rate']) # instead of torch.optim.Adam
 
 # dataloader
 train_dataloader = DataLoader(dataset_train, batch_size=params['batch_size_train'], shuffle=True, num_workers=num_workers_train, drop_last=True)
