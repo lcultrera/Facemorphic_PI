@@ -12,7 +12,8 @@ from torchvision import transforms
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 # import bitsandbytes as bnb
 import sys 
-from vit_models.vivit_small_ds_both import ViT as VITSmall
+from vit_models.vivit_small_middle_fusion import ViT as VITSmall
+from vit_models.vivit_small_middle_fusion_temporal import ViT as ViTTemporal
 import torch.nn as nn
 
 
@@ -47,7 +48,7 @@ params = {
     "mode": 'rgb_event',
     "learning_rate": 0.0001,
     "num_epochs": 10000,
-    "batch_size_train": 2,
+    "batch_size_train": 4,
     "batch_size_test": 2,
     "max_seq_len": 50,
     "patch_size": 36,
@@ -82,9 +83,9 @@ def test(model, dataloader_test, loss_fn, scheduler=None):
             if params['mode'] == 'alpha':
                 outputs = model(inputs)
             if params['mode'] == 'event_rgb':
-                rgb_feature,event_feature, outputs = model(inputs_event.permute(0,1,4,2,3), inputs_rgb.permute(0,1,4,2,3))
+                outputs = model(inputs_event.permute(0,1,4,2,3), inputs_rgb.permute(0,1,4,2,3))
             if params['mode'] == 'rgb_event':
-                rgb_feature,event_feature, outputs = model(inputs_rgb.permute(0,1,4,2,3), inputs_event.permute(0,1,4,2,3))
+                outputs = model(inputs_rgb.permute(0,1,4,2,3), inputs_event.permute(0,1,4,2,3))
             else:
                 outputs = model(inputs.permute(0,1,4,2,3))
             _, predicted = torch.max(outputs.data, 1)
@@ -147,18 +148,18 @@ def train(model, dataloader_train, dataloader_test, loss_fn, loss_fn_mse, optimi
                 if params['mode'] == 'alpha':
                     outputs = model(inputs)
                 if params['mode'] == 'event_rgb':
-                    hall_feature, PI_feature, outputs = model(inputs_event.permute(0,1,4,2,3), inputs_rgb.permute(0,1,4,2,3))
+                    outputs = model(inputs_event.permute(0,1,4,2,3), inputs_rgb.permute(0,1,4,2,3))
                 if params['mode'] == 'rgb_event':
-                    hall_feature, PI_feature, outputs = model(inputs_rgb.permute(0,1,4,2,3), inputs_event.permute(0,1,4,2,3))
+                    outputs = model(inputs_rgb.permute(0,1,4,2,3), inputs_event.permute(0,1,4,2,3))
                 else:
                     outputs = model(inputs.permute(0,1,4,2,3))
                 _, predicted = torch.max(outputs.data, 1)
 
                 # Compute loss
                 #i want an mse loss for rgb_feature with some gt fetures
-                loss_PI = loss_fn_mse(hall_feature, PI_feature) #loss between event and RGB
+                #loss_PI = loss_fn_mse(hall_feature, PI_feature) #loss between event and RGB
                 loss_au = loss_fn(outputs, labels)
-            total_loss = loss_PI + loss_au
+            total_loss = loss_au
             # Backward pass and optimization
             total_loss.backward()
             optimizer.step()
@@ -221,21 +222,6 @@ model_event = VITSmall(
     emb_dropout = 0.1,
 )
 
-model_event2 = VITSmall(
-    image_size = 224,
-    patch_size = 16,
-    num_classes = 24,
-    dim = 64,
-    depth = 4,
-    temporal_depth = 4,
-    heads = 4,
-    mlp_dim = 32,
-    channels = 1,
-    dropout = 0.1,
-    emb_dropout = 0.1,
-)
-
-
 model_rgb = VITSmall(
     image_size = 224,
     patch_size = 16,
@@ -250,72 +236,53 @@ model_rgb = VITSmall(
     emb_dropout = 0.1,
 )
 
-# model_rgb2 = VITSmall(
-#     image_size = 224,
-#     patch_size = 16,
-#     num_classes = 24,
-#     dim = 64,
-#     depth = 4,
-#     temporal_depth = 4,
-#     heads = 4,
-#     mlp_dim = 32,
-#     channels = 3,
-#     dropout = 0.1,
-#     emb_dropout = 0.1,
-# )
-
+model_temporal = ViTTemporal(
+    image_size = 224,
+    patch_size = 16,
+    num_classes = 24,
+    dim = 64*2,
+    depth = 4,
+    temporal_depth = 4,
+    heads = 4,
+    mlp_dim = 32,
+    channels = 3,
+    dropout = 0.1,
+    emb_dropout = 0.1,
+)
 #load model_rgb weights
 model_rgb.load_state_dict(torch.load('best_model-RGB_pretrained.pth'))
 #model_rgb2.load_state_dict(torch.load('best_model-RGB_pretrained.pth'))
 #load model_event weights
 model_event.load_state_dict(torch.load('best_model-event_pretrained.pth'))
-model_event2.load_state_dict(torch.load('best_model-event_pretrained.pth'))
+#model_event2.load_state_dict(torch.load('best_model-event_pretrained.pth'))
 
 class CombinedModel(nn.Module):
-    def __init__(self, model_priviledged, model_original,model_hallucinated, num_classes):
+    def __init__(self, backbone_event,backbone_rgb,temporal_encoder, num_classes):
         super(CombinedModel, self).__init__()
-        self.priviledged_mod = model_priviledged
-        self.original_mod = model_original
-        self.hall_model = model_hallucinated
+        #self.priviledged_mod = model_priviledged
+        self.backbone_event = backbone_event
+        self.backbone_rgb = backbone_rgb
+        self.temporal_encoder = temporal_encoder
+        #self.hall_model = model_hallucinated
         #i want freeze the event model
-        for param in self.priviledged_mod.parameters():
-            param.requires_grad = False
-        
-        # The concatenated output size will be double the dimension of one model
-        
-        combined_dim = 128 
-        
-        # Define a fully connected layer to combine the outputs
-        self.fc = nn.Sequential(
-            nn.Linear(combined_dim, 128),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(128, num_classes)
-        )
-
+        #for param in self.priviledged_mod.parameters():
+        #    param.requires_grad = False
     
 
-    def forward(self, priviledged_input, original_input):
-        # Forward pass through the event-based model
-        priviledged_output = self.priviledged_mod(priviledged_input)
-        
-        # Forward pass through the RGB-based model
-        original_output = self.original_mod(original_input)
-        hall_output = self.hall_model(original_input)
+    def forward(self,rgb,event):
+        rgb_output = self.backbone_rgb(rgb)
+        event_output = self.backbone_event(event)
 
-        # Concatenate the outputs along the last dimension
-        combined_output = torch.cat((original_output, hall_output), dim=-1)
-        
-        # Pass through the fully connected layers
-        final_output = self.fc(combined_output)
-        
-        return hall_output, priviledged_output, final_output
+        combined = torch.cat([rgb_output,event_output],-1)
+        final_output = self.temporal_encoder(combined)
+        return final_output
+        #return hall_output, priviledged_output, final_output
 #i want a model tath use both model_rgb and model_event as sequential models
 
 # for p in model.resnet.parameters():
 #     p.requires_grad = False
 
-model = CombinedModel(model_rgb, model_event,model_event2, num_classes=24)
+model = CombinedModel(model_event,model_rgb,model_temporal, num_classes=24)
 model.cuda()
 num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print(f'Number of parameters: {num_params}')

@@ -64,6 +64,8 @@ class FacemorphicDataset(Dataset):
         self.use_annot = use_annot
 
         # Use either event, rgb or both
+        if mode == 'rgb_event':
+            mode = 'event_rgb'
         assert mode in ['event', 'rgb', 'event_rgb', 'alpha', 'TBR8', 'alpha_mediapipe', 'event_mediapipe']
         self.mode = mode
 

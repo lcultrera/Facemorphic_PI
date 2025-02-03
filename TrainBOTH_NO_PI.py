@@ -156,9 +156,9 @@ def train(model, dataloader_train, dataloader_test, loss_fn, loss_fn_mse, optimi
 
                 # Compute loss
                 #i want an mse loss for rgb_feature with some gt fetures
-                loss_PI = loss_fn_mse(hall_feature, PI_feature) #loss between event and RGB
+                #loss_PI = loss_fn_mse(hall_feature, PI_feature) #loss between event and RGB
                 loss_au = loss_fn(outputs, labels)
-            total_loss = loss_PI + loss_au
+            total_loss = loss_au
             # Backward pass and optimization
             total_loss.backward()
             optimizer.step()
@@ -265,11 +265,11 @@ model_rgb = VITSmall(
 # )
 
 #load model_rgb weights
-model_rgb.load_state_dict(torch.load('best_model-RGB_pretrained.pth'))
+#model_rgb.load_state_dict(torch.load('best_model-RGB_pretrained.pth'))
 #model_rgb2.load_state_dict(torch.load('best_model-RGB_pretrained.pth'))
 #load model_event weights
-model_event.load_state_dict(torch.load('best_model-event_pretrained.pth'))
-model_event2.load_state_dict(torch.load('best_model-event_pretrained.pth'))
+#model_event.load_state_dict(torch.load('best_model-event_pretrained.pth'))
+#model_event2.load_state_dict(torch.load('best_model-event_pretrained.pth'))
 
 class CombinedModel(nn.Module):
     def __init__(self, model_priviledged, model_original,model_hallucinated, num_classes):
@@ -278,8 +278,8 @@ class CombinedModel(nn.Module):
         self.original_mod = model_original
         self.hall_model = model_hallucinated
         #i want freeze the event model
-        for param in self.priviledged_mod.parameters():
-            param.requires_grad = False
+        #for param in self.priviledged_mod.parameters():
+        #    param.requires_grad = False
         
         # The concatenated output size will be double the dimension of one model
         
@@ -301,10 +301,10 @@ class CombinedModel(nn.Module):
         
         # Forward pass through the RGB-based model
         original_output = self.original_mod(original_input)
-        hall_output = self.hall_model(original_input)
-
+        #hall_output = self.hall_model(original_input)
+        hall_output=None
         # Concatenate the outputs along the last dimension
-        combined_output = torch.cat((original_output, hall_output), dim=-1)
+        combined_output = torch.cat((original_output, priviledged_output), dim=-1)
         
         # Pass through the fully connected layers
         final_output = self.fc(combined_output)
