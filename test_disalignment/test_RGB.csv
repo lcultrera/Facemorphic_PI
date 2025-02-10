@@ -1,0 +1,15 @@
+Weightsfile : weights/middle_fusion_best_model-267239.pth, Disalignment :0, Test Loss : 2.6620, Test Accuracy : 0.5862
+Weightsfile : weights/middle_fusion_best_model-267239.pth, Disalignment :1, Test Loss : 2.5654, Test Accuracy : 0.5845
+Weightsfile : weights/middle_fusion_best_model-267239.pth, Disalignment :2, Test Loss : 2.5829, Test Accuracy : 0.5910
+Weightsfile : weights/middle_fusion_best_model-267239.pth, Disalignment :5, Test Loss : 2.7340, Test Accuracy : 0.5620
+Weightsfile : weights/middle_fusion_best_model-267239.pth, Disalignment :10, Test Loss : 3.0311, Test Accuracy : 0.5427 
+Weightsfile : weights/late_fusion_pretrained_best_model-12575.pth, Disalignment :0, Test Loss : 1.7384, Test Accuracy : 0.5652
+Weightsfile : weights/late_fusion_pretrained_best_model-12575.pth, Disalignment :1, Test Loss : 1.7551, Test Accuracy : 0.5636
+Weightsfile : weights/late_fusion_pretrained_best_model-12575.pth, Disalignment :2, Test Loss : 1.7683, Test Accuracy : 0.5556
+Weightsfile : weights/late_fusion_pretrained_best_model-12575.pth, Disalignment :5, Test Loss : 1.7984, Test Accuracy : 0.5475
+Weightsfile : weights/late_fusion_pretrained_best_model-12575.pth, Disalignment :10, Test Loss : 1.8601, Test Accuracy : 0.5346
+Weightsfile : weights/early_fusion_best_model-2365335.pth, Disalignment :0, Test Loss : 3.5712, Test Accuracy : 0.5169
+Weightsfile : weights/early_fusion_best_model-2365335.pth, Disalignment :1, Test Loss : 3.5151, Test Accuracy : 0.5056
+Weightsfile : weights/early_fusion_best_model-2365335.pth, Disalignment :2, Test Loss : 3.4712, Test Accuracy : 0.5072
+Weightsfile : weights/early_fusion_best_model-2365335.pth, Disalignment :5, Test Loss : 3.4285, Test Accuracy : 0.5056
+Weightsfile : weights/early_fusion_best_model-2365335.pth, Disalignment :10, Test Loss : 3.5270, Test Accuracy : 0.4799
